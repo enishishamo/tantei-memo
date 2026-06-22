@@ -43,6 +43,11 @@ body{font-family:'Noto Sans JP',sans-serif;background:#f0eef8;color:#1a1a1a;min-
 .dxbar .row .sc{color:#aaa}
 .track{height:13px;background:#ece9f5;border-radius:7px;overflow:hidden}
 .fill{height:100%;width:0;border-radius:7px;transition:width .4s,opacity .4s}
+/* compact meter reused in 聴診/心エコー/CT */
+.meter .dxbar{margin-bottom:5px}
+.meter .dxbar .row{font-size:11px;margin-bottom:2px}
+.meter .track{height:9px;border-radius:5px}
+.meter .fill{border-radius:5px}
 /* echo / auscultation stages */
 .stage-c{display:flex;justify-content:center;margin:14px 0}
 .hint{font-size:13px;text-align:center;color:#777;min-height:24px;line-height:1.6}
@@ -146,16 +151,25 @@ var SC=document.getElementById('screen'),FT=document.getElementById('footer'),PH
 
 function dxById(k){return DX.filter(function(d){return d.k===k;})[0];}
 function recompute(){scores={m:0,i:0,u:0,t:0,h:0};Q.forEach(function(it){if(ans[it.q]==='yes')for(var k in it.w)scores[k]+=it.w[k];});}
-function topKey(){var t='',mx=-1;for(var k in scores){if(scores[k]>mx){mx=scores[k];t=k;}}return mx>0?t:'';}
+function topKey(){var t='',mx=-1;for(var k in scores){if(!excluded[k]&&scores[k]>mx){mx=scores[k];t=k;}}return mx>0?t:'';}
 function mkbtn(label,fn,primary){var b=document.createElement('button');b.className='btn'+(primary?' primary':'');b.textContent=label;b.onclick=fn;return b;}
 function resetAll(){ans={};scores={m:0,i:0,u:0,t:0,h:0};qi=0;excluded={};explain={dx:null,tx:null};}
 
-/* suspect strip (shows 5→1 as exclusions accrue) */
-function strip(){
-  return '<div class="strip">'+DX.map(function(d){
-    return '<div class="chip'+(excluded[d.k]?' ex':'')+'" style="background:'+d.lc+'"><div class="cpin" style="background:'+d.c+'"></div><div class="cnm" style="color:'+d.tc+'">'+d.n+'</div></div>';
-  }).join('')+'</div>';
+/* 疾患らしさメーター: the diagnosis bars, reused across steps 2-5.
+   Excluded diseases gray out but keep a faint trace; the leading
+   non-excluded disease is highlighted, so 5→1 narrowing is visible. */
+function meterBars(){
+  var top=topKey();
+  return DX.map(function(d){
+    var ex=!!excluded[d.k];
+    var w=Math.round(scores[d.k]/8*100);
+    var op=ex?.4:(d.k===top&&scores[d.k]>0?1:(scores[d.k]>0?.55:.18));
+    return '<div class="dxbar"><div class="row"><span'+(ex?' style="text-decoration:line-through;color:#bbb"':'')+'>'+d.n+'</span><span class="sc">'+(ex?'じょがい':scores[d.k])+'</span></div>'
+      +'<div class="track"><div class="fill" style="width:'+w+'%;background:'+d.c+';opacity:'+op+(ex?';filter:grayscale(1)':'')+'"></div></div></div>';
+  }).join('');
 }
+function meter(label){return '<div class="barslbl">'+(label||'しっかんらしさメーター')+'</div><div class="meter" id="meterbars">'+meterBars()+'</div>';}
+function refreshMeter(){var m=document.getElementById('meterbars');if(m)m.innerHTML=meterBars();}
 
 /* ============ image-with-fallback helper ============
    We always render an SVG drawing as the base, then overlay a PNG
@@ -211,7 +225,8 @@ function auscult(){
   SC.innerHTML='<p class="sub">おなかに <b>ちょうしんき</b> を あてて、<br>ちょうの音を きいてみよう</p>'
     +'<div class="stage-c">'+bellySVG()+'</div>'
     +'<div class="wave">'+[0,.2,.4,.1,.5,.3,.15,.45,.25].map(function(d){return '<i style="animation-delay:'+d+'s"></i>';}).join('')+'</div>'
-    +'<p class="hint" id="ah">せんせい：いまの音、ふつうかな？ うるさい？</p>';
+    +'<p class="hint" id="ah">せんせい：いまの音、ふつうかな？ うるさい？</p>'
+    +meter();
   FT.innerHTML="";
   var bA=mkbtn("うるさい",function(){
     document.getElementById('ah').innerHTML="せんせい：これは <b>ふつうの音</b>だよ。うるさく ないね 🙂";
@@ -219,6 +234,7 @@ function auscult(){
   var bB=mkbtn("うるさくない",function(){
     scores.i=1;excluded.i=true;                  /* faint bar remains, ruled out */
     document.getElementById('ah').innerHTML="せんせい：そう、ふつうの音だね<br>→ <b>いちょうえん は ちがう！</b>";
+    refreshMeter();
     FT.innerHTML="";FT.appendChild(mkbtn("つぎへ（心エコー）",function(){echo();},true));
   },true);
   FT.appendChild(bA);FT.appendChild(bB);
@@ -227,17 +243,17 @@ function auscult(){
 /* ============ STEP 4: echo (rule out 心筋梗塞) ============ */
 function echo(){
   PH.textContent="4 / 6 ・ 心エコー";
-  SC.innerHTML=strip()
-    +'<p class="sub">むねは いたくないけど、ねんのため<br><b>心ぞう</b>を 見てみよう</p>'
+  SC.innerHTML='<p class="sub">むねは いたくないけど、ねんのため<br><b>心ぞう</b>を 見てみよう</p>'
     +'<div class="stage-c"><svg width="170" height="170" viewBox="0 0 160 160"><circle cx="80" cy="80" r="66" fill="#1a1a1a"/><path id="hh" d="M80 60 q-15 -17 -30 -2 q-13 15 0 32 q11 15 30 28 q19 -13 30 -28 q13 -17 0 -32 q-15 -15 -30 2z" fill="#E24B4A"/><text x="80" y="150" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#888">ドクン、ドクン…</text></svg></div>'
-    +'<p class="hint" id="eh">エコーを 当ててみよう</p>';
+    +'<p class="hint" id="eh">エコーを 当ててみよう</p>'
+    +meter();
   var h=document.getElementById('hh'),beat=0;
   var iv=setInterval(function(){beat++;var s=beat%2?1.13:1;h.setAttribute('transform','translate(80 80) scale('+s+') translate(-80 -80)');},460);
   FT.innerHTML="";
   FT.appendChild(mkbtn("心ぞうを 見た！",function(){
     clearInterval(iv);scores.h=0;excluded.h=true;
     document.getElementById('eh').innerHTML="心ぞうは <b>元気に動いてる</b> → だいじょうぶ！";
-    SC.querySelector('.strip').outerHTML=strip();
+    refreshMeter();
     FT.innerHTML="";FT.appendChild(mkbtn("つぎへ（CTけんさ）",function(){ct();},true));
   },true));
 }
@@ -300,7 +316,7 @@ var CTGUIDE={
 
 function ct(){
   PH.textContent="5 / 6 ・ CT";ctIdx=0;ctPhase='gall';
-  SC.innerHTML=strip()
+  SC.innerHTML=meter()
     +'<div class="ct-cols"><div class="ct-body"><div class="bodywrap">'+bodyFigure()+'<div class="nowline" id="nowline"><span>いまここ</span></div></div><div class="cap">下から<br>見上げてるよ！</div></div>'
     +'<div class="ct-main"><div class="ctbox"><div class="stagewrap"><div class="stage" id="stage">'+ctImg(0)+'<div class="glow" id="glow"></div></div>'
     +'<span class="dir t">おなかがわ</span><span class="dir b">せなかがわ</span><span class="dir l">みぎ</span><span class="dir r">ひだり</span></div>'
@@ -349,13 +365,13 @@ function openZoom(phase){
     zoomShell(fb,'img/zoom_gall_normal.png','たんのうに 白い石、ある？ ない？',
       '<div class="zbtns"><button class="btn" id="za">ある</button><button class="btn primary" id="zn">ない</button></div>');
     document.getElementById('za').onclick=function(){document.getElementById('zmsg').textContent="うーん、よーく見て。白い石は ないみたい。もう一回！";};
-    document.getElementById('zn').onclick=function(){excluded.t=true;refreshStrip();closeZoom();ctPhase='ureter';setGuide("せいかい！ <b>たんせき じゃない！</b><br>"+CTGUIDE.ureter);refreshGlow();};
+    document.getElementById('zn').onclick=function(){excluded.t=true;refreshMeter();closeZoom();ctPhase='ureter';setGuide("せいかい！ <b>たんせき じゃない！</b><br>"+CTGUIDE.ureter);refreshGlow();};
   }else if(phase==='ureter'){
     var fb2='<svg viewBox="0 0 100 100"><rect x="42" y="18" width="16" height="64" rx="8" fill="#5DA0E0"/></svg>';
     zoomShell(fb2,'img/zoom_ureter_normal.png','おしっこの道に 白い石、ある？ ない？',
       '<div class="zbtns"><button class="btn" id="za">ある</button><button class="btn primary" id="zn">ない</button></div>');
     document.getElementById('za').onclick=function(){document.getElementById('zmsg').textContent="道は きれい。白い石は ないみたい。もう一回！";};
-    document.getElementById('zn').onclick=function(){excluded.u=true;refreshStrip();closeZoom();ctPhase='appendix';setGuide("せいかい！ <b>にょうろけっせき じゃない！</b><br>"+CTGUIDE.appendix);refreshGlow();};
+    document.getElementById('zn').onclick=function(){excluded.u=true;refreshMeter();closeZoom();ctPhase='appendix';setGuide("せいかい！ <b>にょうろけっせき じゃない！</b><br>"+CTGUIDE.appendix);refreshGlow();};
   }else if(phase==='appendix'){
     var fb3='<svg viewBox="0 0 100 100"><ellipse cx="50" cy="52" rx="38" ry="34" fill="#fff" opacity=".6"/><path d="M34 30 q30 8 24 50" fill="none" stroke="#E24B4A" stroke-width="18" stroke-linecap="round"/></svg>';
     zoomShell(fb3,'img/zoom_appendix_inflamed.png','ソーセージみたいに はれて、<br>まわりが 白い！ これは…？',
@@ -374,7 +390,6 @@ function openZoom(phase){
     });
   }
 }
-function refreshStrip(){var s=SC.querySelector('.strip');if(s)s.outerHTML=strip();}
 
 /* ============ STEP 6: explain → surgery → thanks ============ */
 function treat(){
@@ -418,7 +433,7 @@ function thanks(){
 }
 function done(){
   PH.textContent="かいけつ";
-  SC.innerHTML='<div class="center" style="padding:26px 0"><div style="font-size:50px">🏅</div><p class="big" style="margin:12px 0 6px">じけん かいけつ！</p><p class="sub">きみは りっぱな 研修医だ。<br>「もうちょうえん」を 見つけ出した！</p>'+strip()+'</div>';
+  SC.innerHTML='<div class="center" style="padding:26px 0"><div style="font-size:50px">🏅</div><p class="big" style="margin:12px 0 6px">じけん かいけつ！</p><p class="sub">きみは りっぱな 研修医だ。<br>「もうちょうえん」を 見つけ出した！</p>'+meter("さいごの メーター")+'</div>';
   FT.innerHTML="";FT.appendChild(mkbtn("もう一回 あそぶ",function(){resetAll();map();}));
 }
 
