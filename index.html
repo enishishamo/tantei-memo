@@ -65,6 +65,14 @@ body{font-family:'Noto Sans JP',sans-serif;background:#f0eef8;color:#1a1a1a;min-
 .nowline span{position:absolute;right:0;top:-15px;font-size:9px;font-weight:700;color:#D4537E;background:#faf9fc;padding:0 3px}
 .ct-main{flex:1;min-width:0}
 .ctbox{background:#EAE6DD;border-radius:12px;padding:8px 10px 10px}
+/* CT 大画面: full-width image + compact body-ref beside the slider */
+.ctbox.big{padding:10px 12px 12px}
+.ctbox.big .stagewrap{padding:14px 20px 16px}
+.ct-ctrl{display:flex;align-items:center;gap:12px;margin-top:8px}
+.ct-mini{width:62px;flex:none;text-align:center}
+.ct-mini .minicap{font-size:9px;color:#8A857B;margin-top:3px;line-height:1.2}
+.ct-mini .nowline span{font-size:8px;top:-13px}
+.slrbox{flex:1}
 .stagewrap{position:relative;padding:14px 22px 16px}
 .stage{position:relative;background:#F4F1EA;border-radius:8px;overflow:hidden;aspect-ratio:1/1}
 .stage svg{display:block;width:100%;height:100%}
@@ -316,12 +324,12 @@ var CTGUIDE={
 
 function ct(){
   PH.textContent="5 / 6 ・ CT";ctIdx=0;ctPhase='gall';
-  SC.innerHTML=meter()
-    +'<div class="ct-cols"><div class="ct-body"><div class="bodywrap">'+bodyFigure()+'<div class="nowline" id="nowline"><span>いまここ</span></div></div><div class="cap">下から<br>見上げてるよ！</div></div>'
-    +'<div class="ct-main"><div class="ctbox"><div class="stagewrap"><div class="stage" id="stage">'+ctImg(0)+'<div class="glow" id="glow"></div></div>'
+  /* CT only: full-width big CT image; meter hidden here (見える on 聴診/エコー/結果) */
+  SC.innerHTML='<div class="ctbox big"><div class="stagewrap"><div class="stage" id="stage">'+ctImg(0)+'<div class="glow" id="glow"></div></div>'
     +'<span class="dir t">おなかがわ</span><span class="dir b">せなかがわ</span><span class="dir l">みぎ</span><span class="dir r">ひだり</span></div>'
     +'<div class="ctcap">あしのほうから 見上げた 輪切り</div>'
-    +'<div class="slr"><span>あたま</span><input type="range" id="dp" min="0" max="7" value="0" step="1"><span>あし</span></div></div></div></div>'
+    +'<div class="ct-ctrl"><div class="ct-mini"><div class="bodywrap">'+bodyFigure()+'<div class="nowline" id="nowline"><span>ここ</span></div></div><div class="minicap">下から見上げ</div></div>'
+    +'<div class="slrbox"><div class="slr"><span>あたま</span><input type="range" id="dp" min="0" max="7" value="0" step="1"><span>あし</span></div></div></div></div>'
     +'<div class="guide" id="guide">'+CTGUIDE.gall+'</div>';
   document.getElementById('dp').oninput=function(){setSlice(+this.value);};
   document.getElementById('glow').onclick=function(){openZoom(ctPhase);};
