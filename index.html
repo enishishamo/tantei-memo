@@ -108,6 +108,17 @@ input[type=range]{flex:1;accent-color:#6a5ab0}
 .zoom .zbtns{display:flex;gap:10px;width:100%;max-width:300px}
 .zoom .zbtns .btn{flex:1}
 .zmsg{color:#ffd9e3;font-size:12.5px;text-align:center;margin-top:10px;min-height:18px}
+/* surgery room image (fallback: 🏥 circle) */
+.orroom{width:100%;max-width:300px;margin:0 auto 14px;border-radius:16px;overflow:hidden}
+.orroom .orimg{display:block;width:100%}
+/* CT intro: 3 findings to look for */
+.exrow{display:flex;gap:8px;width:100%;max-width:360px}
+.excard{flex:1;border-radius:12px;padding:8px 6px;text-align:center}
+.excard .eximg{position:relative;width:100%;aspect-ratio:1/1;background:#fff;border-radius:8px;overflow:hidden;margin-bottom:5px}
+.excard .eximg img.ov{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.excard .eximg svg{display:block;width:100%;height:100%}
+.excard .exnm{font-size:11px;font-weight:700;line-height:1.2}
+.excard .exd{font-size:9px;margin-top:3px;line-height:1.3}
 /* judge cards */
 .cards{display:grid;grid-template-columns:1fr;gap:8px;width:100%;max-width:320px}
 .crd{border-radius:12px;padding:11px 12px;text-align:left;cursor:pointer;border:2px solid;display:flex;align-items:center;gap:8px}
@@ -387,9 +398,20 @@ function zoomShell(svgFb,src,q,inner){
 }
 function closeZoom(){var z=document.getElementById('zoom');if(z)z.remove();}
 
+/* CT intro: show all 3 findings to look for (たんせき/にょうろけっせき/もうちょうえん) up front */
 function introStone(){
-  var fb='<svg viewBox="0 0 100 100"><ellipse cx="50" cy="52" rx="30" ry="36" fill="#97C459"/><circle cx="50" cy="55" r="9" fill="#fff"/><circle cx="44" cy="48" r="4" fill="#fff"/></svg>';
-  var z=zoomShell(fb,'CTzoom_img/zoom_gall_stone.png','これが「石」だよ。<br>白い ツブツブを さがそう！','<div class="zbtns"><button class="btn primary" style="flex:1" id="zk">わかった！</button></div>');
+  var EX=[
+    {k:'t',img:'CTzoom_img/zoom_gall_stone.png',d:'ふくろに 白い石',fb:'<svg viewBox="0 0 100 100"><ellipse cx="50" cy="52" rx="30" ry="36" fill="#97C459"/><circle cx="50" cy="55" r="9" fill="#fff"/><circle cx="44" cy="48" r="4" fill="#fff"/></svg>'},
+    {k:'u',img:'CTzoom_img/zoom_ureter_stone.png',d:'みちに 白い石',fb:'<svg viewBox="0 0 100 100"><rect x="42" y="16" width="16" height="68" rx="8" fill="#5DA0E0"/><circle cx="50" cy="50" r="7" fill="#fff"/></svg>'},
+    {k:'m',img:'CTzoom_img/zoom_appendix_inflamed.png',d:'ソーセージ＋白いもや',fb:'<svg viewBox="0 0 100 100"><ellipse cx="50" cy="52" rx="38" ry="34" fill="#fff" opacity=".6"/><path d="M34 30 q30 8 24 50" fill="none" stroke="#E24B4A" stroke-width="18" stroke-linecap="round"/></svg>'}
+  ];
+  var z=document.createElement('div');z.className='zoom';z.id='zoom';
+  z.innerHTML='<div class="zq" style="margin-top:0">CTで この3つの どれが いるか さがそう！</div>'
+    +'<div class="exrow">'+EX.map(function(e){var d=dxById(e.k);
+      return '<div class="excard" style="background:'+d.lc+';border:2px solid '+d.c+'"><div class="eximg">'+imgFB(e.img,e.fb,'ov')+'</div><div class="exnm" style="color:'+d.tc+'">'+d.n+'</div><div class="exd" style="color:'+d.tc+'">'+e.d+'</div></div>';
+    }).join('')+'</div>'
+    +'<div class="zbtns" style="margin-top:16px"><button class="btn primary" style="flex:1" id="zk">わかった！ さがす</button></div>';
+  SC.appendChild(z);
   document.getElementById('zk').onclick=function(){closeZoom();setGuide(CTGUIDE.gall);refreshGlow();};
 }
 function openZoom(phase){
@@ -455,7 +477,7 @@ function explainScene(){
   FT.innerHTML="";FT.appendChild(mkbtn("しゅじゅつ スタート",function(){go('surgery');},true));
 }
 function surgery(){
-  SC.innerHTML='<div class="center"><div class="circle" style="background:#FCEBEB">🏥</div><p class="surg" id="sg">しゅじゅつ中…</p></div>';
+  SC.innerHTML='<div class="center"><div class="orroom">'+imgFB('img/operating_room.png','<div class="circle" style="background:#FCEBEB">🏥</div>','orimg')+'</div><p class="surg" id="sg">しゅじゅつ中…</p></div>';
   FT.innerHTML="";
   var sg=document.getElementById('sg'),steps=["しゅじゅつ中…","はれた ちゅうすいを とっています…","せいこう！ 🎉"],n=0;
   TIMER=setInterval(function(){if(CUR!=='surgery'){stopTimer();return;}n++;if(n<steps.length){sg.textContent=steps[n];}if(n>=steps.length-1){stopTimer();FT.innerHTML="";FT.appendChild(mkbtn("つぎへ",function(){go('thanks');},true));}},1300);
