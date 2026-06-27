@@ -9,6 +9,10 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font-family:'Noto Sans JP',sans-serif;background:#f0eef8;color:#1a1a1a;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:16px}
 .app{width:100%;max-width:460px;background:#faf9fc;border-radius:20px;box-shadow:0 8px 40px rgba(80,60,150,.12);overflow:hidden}
+/* PCなど広い画面では全体を拡大して見やすく（タブレット/スマホはそのまま） */
+@media (min-width:760px){ .app{zoom:1.45} }
+@media (min-width:760px) and (max-height:820px){ .app{zoom:1.2} }
+@media (min-width:1100px) and (min-height:980px){ .app{zoom:1.7} }
 .bar{display:flex;align-items:center;gap:8px;padding:14px 16px;background:#6a5ab0;color:#fff}
 .bar .ttl{font-size:16px;font-weight:700}
 /* こっそり戻るボタン（控えめに） */
